@@ -1,0 +1,9 @@
+import { and, eq } from "drizzle-orm";
+import { requireContext } from "@/lib/auth/context";
+import { writeAudit } from "@/lib/auth/audit";
+import { roleSchema } from "@/lib/auth/validation";
+import { getDb } from "@/lib/db";
+import { memberships } from "@/lib/db/schema";
+import { assertOwnerRemains } from "@/lib/auth/members";
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){const auth=await requireContext(request,"members.update");if(auth.response)return auth.response;const context=auth.context!;const id=(await params).id;try{const body=await request.json();const parsed=roleSchema.parse(body.role);if(parsed==="OWNER"&&context.membership.role!=="OWNER")return Response.json({error:"FORBIDDEN"},{status:403});const guard=await assertOwnerRemains(context.organization.id,id);if(guard.error)return guard.error;const [data]=await getDb().update(memberships).set({role:parsed,updatedAt:new Date()}).where(and(eq(memberships.id,id),eq(memberships.organizationId,context.organization.id))).returning();await writeAudit(request,context,"member.role_changed","membership",id,{from:guard.target!.role,to:parsed});return Response.json({data})}catch{return Response.json({error:"INVALID_ROLE"},{status:400})}}
+export async function DELETE(request:Request,{params}:{params:Promise<{id:string}>}){const auth=await requireContext(request,"members.remove");if(auth.response)return auth.response;const context=auth.context!;const id=(await params).id;const guard=await assertOwnerRemains(context.organization.id,id);if(guard.error)return guard.error;const [data]=await getDb().delete(memberships).where(and(eq(memberships.id,id),eq(memberships.organizationId,context.organization.id))).returning({id:memberships.id});if(data)await writeAudit(request,context,"member.removed","membership",id,{userId:guard.target!.userId});return data?Response.json({data}):Response.json({error:"NOT_FOUND"},{status:404})}

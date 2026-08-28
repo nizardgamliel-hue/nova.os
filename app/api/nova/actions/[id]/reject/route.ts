@@ -1,0 +1,2 @@
+import { requireContext } from "@/lib/auth/context"; import { cancelAction } from "@/lib/nova/action-engine";
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){const auth=await requireContext(request);if(auth.response)return auth.response;try{return Response.json({data:await cancelAction(auth.context!, (await params).id,request)});}catch(e){return Response.json({error:e instanceof Error?e.message:"FAILED"},{status:404});}}

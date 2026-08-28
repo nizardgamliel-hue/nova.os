@@ -1,0 +1,1 @@
+ALTER TABLE "business_events" ADD COLUMN "source" text DEFAULT 'system' NOT NULL;
