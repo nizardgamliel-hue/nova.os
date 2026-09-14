@@ -1,0 +1,2 @@
+ALTER TABLE "nova_actions" ADD COLUMN "idempotency_key" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "nova_actions_org_idempotency_unique" ON "nova_actions" USING btree ("organization_id","idempotency_key");

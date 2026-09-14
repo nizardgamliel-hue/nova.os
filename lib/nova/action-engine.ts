@@ -29,7 +29,7 @@ export async function requestAction(ctx:AuthContext, type:ActionType, raw:unknow
 
 export async function approveAction(ctx:AuthContext, id:string, request:Request){
   const db=getDb(); const [a]=await db.select().from(novaActions).where(and(eq(novaActions.id,id),eq(novaActions.organizationId,ctx.organization.id),eq(novaActions.userId,ctx.user.id))).limit(1);
-  if(!a) throw new Error("NOT_FOUND"); if(a.status!=="PENDING_APPROVAL") throw new Error("NOT_APPROVABLE"); if(a.expiresAt<=new Date()) { await db.update(novaActions).set({status:"EXPIRED",cancelledAt:new Date()}).where(eq(novaActions.id,a.id)); throw new Error("EXPIRED"); }
+  if(!a) throw new Error("NOT_FOUND"); if(a.status==="SUCCEEDED") return a; if(a.status!=="PENDING_APPROVAL") throw new Error("NOT_APPROVABLE"); if(a.expiresAt<=new Date()) { await db.update(novaActions).set({status:"EXPIRED",cancelledAt:new Date()}).where(eq(novaActions.id,a.id)); throw new Error("EXPIRED"); }
   const type=a.actionType as ActionType; const def=actionDefinitions[type]; if(!def||!can(ctx.membership.role,def.permission)||def.policy==="FORBIDDEN") throw new Error("FORBIDDEN");
   const [claimed]=await db.update(novaActions).set({status:"EXECUTING",approvedAt:new Date()}).where(and(eq(novaActions.id,a.id),eq(novaActions.status,"PENDING_APPROVAL"))).returning(); if(!claimed) throw new Error("ALREADY_PROCESSED");
   await writeAudit(request,ctx,"nova.action.approved","nova_action",a.id,{toolId:type});

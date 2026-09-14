@@ -71,6 +71,20 @@
       "when": 1787928782615,
       "tag": "0009_harsh_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789394504623,
+      "tag": "0010_sleepy_impossible_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789395126604,
+      "tag": "0011_ambiguous_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }
