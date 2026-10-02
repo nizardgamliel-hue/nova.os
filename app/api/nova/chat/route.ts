@@ -9,6 +9,7 @@ import { buildNovaContext } from "@/lib/nova/context-engine";
 import { conversationTitle, getConversation, loadMessages, saveMessage, textFromMessage } from "@/lib/nova/conversations";
 import { getNovaModel, isNovaProviderConfigured } from "@/lib/nova/ai-provider";
 import { buildNovaInstructions } from "@/lib/nova/system-instructions";
+import { crmChatTools } from "@/lib/crm/chat-tools";
 import { runRelevantNovaTools } from "@/lib/nova/tool-registry";
 
 export const maxDuration = 60;
@@ -30,8 +31,8 @@ export async function POST(request:Request){
   const companyContext=await buildNovaContext(context),retrieval=await runRelevantNovaTools(request,context,userText);
   const agent=new ToolLoopAgent({
     model:model.model,
-    instructions:buildNovaInstructions(`${companyContext.prompt}\nVERIFIED READ-ONLY TOOL RESULTS FOR THIS QUESTION:\n${retrieval.length?JSON.stringify(retrieval):"No business tool was relevant or permitted. Do not invent missing data."}`),
-    tools:{},
+    instructions:buildNovaInstructions(`${companyContext.prompt}\nVERIFIED TOOL RESULTS FOR THIS QUESTION:\n${retrieval.length?JSON.stringify(retrieval):"No business tool was relevant or permitted. Do not invent missing data."}`),
+    tools:crmChatTools(context),
     stopWhen:isStepCount(6),temperature:model.temperature,maxOutputTokens:model.maxOutputTokens,maxRetries:1,
     providerOptions:{gateway:{user:context.user.id,tags:["feature:nova-core",`organization:${context.organization.id}`]}},
     onEnd:async({usage})=>{await getDb().update(novaAiUsage).set({inputTokens:usage.inputTokens,outputTokens:usage.outputTokens,totalTokens:usage.totalTokens,latencyMs:Date.now()-started}).where(eq(novaAiUsage.id,usageRow.id))},

@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const contactStatus = pgEnum("contact_status", ["new", "qualified", "contacted", "customer", "inactive"]);
@@ -89,11 +89,12 @@ export const contacts = pgTable("contacts", {
   source: text("source").notNull().default("manual"),
   tags: text("tags").array().notNull().default([]),
   notes: text("notes"),
+  billingAddress: text("billing_address"), legalId: text("legal_id"), vatId: text("vat_id"), isTest: boolean("is_test").notNull().default(false),
   lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
   demo: boolean("demo").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("contacts_org_idx").on(table.organizationId), index("contacts_email_idx").on(table.email)]);
+}, (table) => [index("contacts_org_idx").on(table.organizationId), index("contacts_email_idx").on(table.email), uniqueIndex("contacts_org_email_unique").on(table.organizationId,sql`lower(btrim(${table.email}))`)]);
 
 export const deals = pgTable("deals", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -168,3 +169,15 @@ export const businessEvents = pgTable("business_events", { id:uuid("id").primary
 
 export type Contact = typeof contacts.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
+
+
+// Nova CRM pilot: migrations also install immutable-invoice and tenant-check triggers.
+export const crmCompanies=pgTable("crm_companies",{id:uuid("id").primaryKey().defaultRandom(),organizationId:uuid("organization_id").notNull().references(()=>organizations.id),name:text("name").notNull(),address:text("address").notNull().default(""),legalId:text("legal_id").notNull().default(""),vatId:text("vat_id").notNull().default(""),createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow()},t=>[uniqueIndex("crm_companies_org_id_unique").on(t.organizationId,t.id)]);
+export const crmNotes=pgTable("crm_notes",{id:uuid("id").primaryKey().defaultRandom(),organizationId:uuid("organization_id").notNull().references(()=>organizations.id),contactId:uuid("contact_id").notNull().references(()=>contacts.id),body:text("body").notNull(),createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow()});
+export const crmTasks=pgTable("crm_tasks",{id:uuid("id").primaryKey().defaultRandom(),organizationId:uuid("organization_id").notNull().references(()=>organizations.id),contactId:uuid("contact_id").references(()=>contacts.id),title:text("title").notNull(),dueAt:timestamp("due_at",{withTimezone:true}).notNull(),completedAt:timestamp("completed_at",{withTimezone:true}),createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow()});
+export const crmImports=pgTable("crm_imports",{id:uuid("id").primaryKey().defaultRandom(),organizationId:uuid("organization_id").notNull().references(()=>organizations.id),filename:text("filename").notNull(),result:jsonb("result").notNull(),createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow()});
+export const crmBillingProfiles=pgTable("crm_billing_profiles",{organizationId:uuid("organization_id").primaryKey().references(()=>organizations.id),party:jsonb("party").notNull(),paymentInstructions:text("payment_instructions").notNull()});
+export const crmInvoices=pgTable("crm_invoices",{id:uuid("id").primaryKey().defaultRandom(),organizationId:uuid("organization_id").notNull().references(()=>organizations.id),contactId:uuid("contact_id").notNull().references(()=>contacts.id),status:text("status").notNull().default("draft"),number:text("number"),version:integer("version").notNull().default(1),snapshot:jsonb("snapshot").notNull(),pdfBase64:text("pdf_base64"),finalizedAt:timestamp("finalized_at",{withTimezone:true}),paidAt:timestamp("paid_at",{withTimezone:true}),createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow()},t=>[uniqueIndex("crm_invoices_org_number_unique").on(t.organizationId,t.number)]);
+export const crmInvoiceCounters=pgTable("crm_invoice_counters",{organizationId:uuid("organization_id").primaryKey().references(()=>organizations.id),value:bigint("value",{mode:"bigint"}).notNull()});
+export const crmMail=pgTable("crm_mail",{id:uuid("id").primaryKey().defaultRandom(),organizationId:uuid("organization_id").notNull().references(()=>organizations.id),contactId:uuid("contact_id").notNull().references(()=>contacts.id),invoiceId:uuid("invoice_id").references(()=>crmInvoices.id),dedupKey:text("dedup_key").notNull(),recipient:text("recipient").notNull(),subject:text("subject").notNull(),body:text("body").notNull(),attachments:jsonb("attachments").notNull().default([]),status:text("status").notNull().default("prepared"),automatic:boolean("automatic").notNull().default(false),providerId:text("provider_id"),error:text("error"),requestedAt:timestamp("requested_at",{withTimezone:true}).notNull().defaultNow(),attemptedAt:timestamp("attempted_at",{withTimezone:true}),completedAt:timestamp("completed_at",{withTimezone:true})},t=>[uniqueIndex("crm_mail_org_dedup_unique").on(t.organizationId,t.dedupKey)]);
+export const crmFollowupRules=pgTable("crm_followup_rules",{organizationId:uuid("organization_id").primaryKey().references(()=>organizations.id),enabled:boolean("enabled").notNull().default(false),delayDays:integer("delay_days").notNull().default(7),subject:text("subject").notNull(),template:text("template").notNull(),actorUserId:text("actor_user_id").notNull().references(()=>user.id),updatedAt:timestamp("updated_at",{withTimezone:true}).notNull().defaultNow()});

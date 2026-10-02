@@ -18,5 +18,5 @@ export function getNovaModel(profile: NovaModelProfile = "FAST") {
 }
 
 export function isNovaProviderConfigured() {
-  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN || process.env.NOVA_GATEWAY_READY === "true");
+  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN);
 }

@@ -1,0 +1,5 @@
+firstName,lastName,company,email,phone,status,notes
+David,Test,Client Test,david@example.test,+33 6 12 34 56 78,contacted,Premier contact de test
+David,Autre,Autre Client,david.autre@example.test,,new,Nom volontairement ambigu
+David,Doublon,Client Test,DAVID@example.test,,new,Cette ligne doit être ignorée
+Erreur,Adresse,Client Test,invalide,,new,Cette ligne doit être rejetée

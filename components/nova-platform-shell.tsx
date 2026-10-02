@@ -8,7 +8,7 @@ import { Activity, BarChart3, Bell, Bot, Brain, BriefcaseBusiness, Building2, Ch
 import { authClient } from "@/lib/auth/client";
 
 const groups = [
-  { name:"COMMAND", items:[["Accueil","/app",Home],["Nova","/app/assistant",Sparkles],["Nova Manager","/app/nova-manager",Command],["Autopilot","/app/autopilot",Zap]] },
+  { name:"COMMAND", items:[["Accueil","/app",Home],["Nova CRM · pilote","/app/crm-pilote",Users],["Nova","/app/assistant",Sparkles],["Nova Manager","/app/nova-manager",Command],["Autopilot","/app/autopilot",Zap]] },
   { name:"REVENUE", items:[["Prospection","/app/prospection",Target],["Ventes / CRM","/app/ventes",BriefcaseBusiness],["Marketing","/app/marketing",Megaphone],["Communications","/app/communications",Inbox],["Réseaux sociaux","/app/social",Users]] },
   { name:"CUSTOMER", items:[["Service client","/app/service-client",Headphones],["Nova Voice","/app/voice",Mic2]] },
   { name:"COMPANY", items:[["Finance","/app/finance",CircleDollarSign],["RH","/app/rh",Users],["Opérations","/app/operations",Package],["Tâches & Projets","/app/projets",Target],["Documents","/app/documents",FileText]] },
@@ -28,7 +28,7 @@ export function NovaPlatformShell({ children,user,activeOrganization,organizatio
   useEffect(()=>{const onKey=(event:KeyboardEvent)=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k"){event.preventDefault();setPalette(value=>!value)}if(event.key==="Escape")setPalette(false)};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[]);
   const results=useMemo(()=>allItems.filter(item=>(item[0]+item[3]).toLowerCase().includes(query.toLowerCase())).slice(0,10),[query]);
   const current=allItems.find(item=>item[1]===path);
-  const auditStatus=path==="/app/ventes"||path==="/app/prospection"?"WORKING":path==="/app/securite"||path==="/app/parametres"||path==="/app/equipe"?"PARTIAL":path==="/app/assistant"?"PARTIAL":"DEMO";
+  const auditStatus=path==="/app/crm-pilote"?"PARTIAL":path==="/app/ventes"||path==="/app/prospection"?"WORKING":path==="/app/securite"||path==="/app/parametres"||path==="/app/equipe"?"PARTIAL":path==="/app/assistant"?"PARTIAL":"DEMO";
   const navigate=(href:string)=>{router.push(href==="/app/assistant"&&query?`${href}?q=${encodeURIComponent(query.replace(/^ask nova\s*:\s*/i,""))}`:href);setPalette(false);setQuery("");setOpen(false)};
   const switchOrganization=async(id:string)=>{if(id===activeOrganization.id)return setOrgOpen(false);setSwitching(true);const response=await fetch("/api/organizations/active",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({organizationId:id})});if(response.ok){router.replace("/app");router.refresh()}else setSwitching(false)};
   const initials=user.name.split(" ").map(part=>part[0]).join("").slice(0,2).toUpperCase();

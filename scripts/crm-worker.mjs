@@ -1,0 +1,4 @@
+const target=process.env.NOVA_CRM_WORKER_URL||"http://localhost:3000/api/cron/crm-followups";
+if(!process.env.CRON_SECRET)throw Error("CRON_SECRET manquant. Configurer le worker sans partager le secret dans la conversation.");
+async function tick(){try{const r=await fetch(target,{method:"POST",headers:{Authorization:`Bearer ${process.env.CRON_SECRET}`},signal:AbortSignal.timeout(55000)});const p=await r.json();if(!r.ok)throw Error(p.error||`HTTP_${r.status}`);console.log(JSON.stringify({at:new Date().toISOString(),organizations:p.data.length,results:p.data.map(r=>({organizationId:r.organizationId,processed:r.processed,error:r.error,statuses:r.results?.map(m=>m.status||m.error)}))}));}catch(e){console.error("CRM_WORKER_ERROR",e instanceof Error?e.message:"UNKNOWN");process.exitCode=1;}}
+await tick();if(!process.argv.includes("--once"))setInterval(()=>void tick(),60000);
